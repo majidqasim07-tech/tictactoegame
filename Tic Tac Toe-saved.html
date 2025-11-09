@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic Tac Toe</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@700&display=swap');
+
+        body {
+            font-family: 'Poppins', 'Arial', sans-serif;
+            background-color: #f6e0bb;
+            color: #47391f;
+            overflow: hidden;
+        }
+
+        .app-container {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
+            transition: opacity 0.4s ease-out, transform 0.4s ease-out;
+            backface-visibility: hidden;
+        }
+
+        .screen.hidden {
+            opacity: 0;
+            transform: translateY(20px);
+            pointer-events: none;
+            visibility: hidden;
+        }
+
+        .screen.visible {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+            visibility: visible;
+        }
+
+        .title-char {
+            display: inline-block;
+        }
+
+        .game-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            width: 90vw;
+            height: 90vw;
+            max-width: 400px;
+            max-height: 400px;
+            gap: 10px;
+            background-color: #47391f;
+            padding: 10px;
+            border-radius: 10px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+
+        .cell {
+            background-color: #fff8f3;
+            border-radius: 5px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-size: 70%;
+            background-repeat: no-repeat;
+            background-position: center;
+            transition: background-color 0.2s ease;
+        }
+        
+        .cell:hover:not(.x):not(.o) {
+            background-color: #ffefd7;
+        }
+
+        .cell.x {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M20 20 L80 80 M20 80 L80 20' stroke='%233f3b35' stroke-width='12' stroke-linecap='round' stroke-linejoin='round' fill='none' transform='rotate(5)'/%3E%3C/svg%3E");
+        }
+
+        .cell.o {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='30' stroke='%233f3b35' stroke-width='12' fill='none'/%3E%3C/svg%3E");
+        }
+        
+        .btn-primary {
+            background-color: #4f3700;
+            color: #fff8f3;
+            padding: 0.75rem 2rem;
+            border-radius: 8px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+        
+        .btn-secondary {
+            background-color: transparent;
+            color: #4f3700;
+            border: 2px solid #4f3700;
+        }
+
+        /* Popup Styles */
+        .popup-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transition: opacity 0.3s ease-in-out;
+        }
+        .popup-overlay.visible {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+        }
+        .popup-content {
+            background-color: #FFFFFF;
+            padding: 40px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.4);
+            max-width: 300px;
+            width: 90%;
+            font-family: 'Arial', sans-serif;
+            color: #333333;
+            transform: scale(0.9);
+            transition: transform 0.3s ease-in-out;
+        }
+        .popup-overlay.visible .popup-content {
+            transform: scale(1);
+        }
+        #popupMessage {
+            font-size: 2em;
+            margin-bottom: 25px;
+            line-height: 1.2;
+            font-weight: bold;
+        }
+        .popup-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .popup-content button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: bold;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+            flex-grow: 1;
+            max-width: 150px;
+        }
+        .popup-content button:active {
+            transform: scale(0.95);
+        }
+        #playAgainButton {
+            background-color: #4CAF50;
+            color: white;
+        }
+        #playAgainButton:hover {
+            background-color: #45a049;
+        }
+        #backToMenuButton {
+            background-color: #F44336;
+            color: white;
+        }
+        #backToMenuButton:hover {
+            background-color: #da190b;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Home Screen -->
+        <div id="homeScreen" class="screen visible">
+            <div class="text-center">
+                <h1 id="mainTitle" class="text-5xl md:text-7xl font-bold mb-12"></h1>
+                <div class="space-y-4 flex flex-col items-center">
+                    <button id="playComputerBtn" class="btn-primary w-64">Play with Computer</button>
+                    <button id="play2PBtn" class="btn-primary w-64">2 Players</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Difficulty Selection Screen -->
+        <div id="difficultyScreen" class="screen hidden">
+            <div class="text-center">
+                <h2 class="text-4xl md:text-5xl font-bold mb-10">Select Difficulty</h2>
+                <div class="space-y-4 flex flex-col items-center">
+                    <button data-difficulty="easy" class="btn-primary w-64">Easy</button>
+                    <button data-difficulty="medium" class="btn-primary w-64">Medium</button>
+                    <button data-difficulty="hard" class="btn-primary w-64">Hard</button>
+                    <button id="backToHomeBtn" class="btn-primary btn-secondary w-64 mt-8">Back</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="gameScreen" class="screen hidden">
+            <div class="w-full max-w-lg mx-auto text-center">
+                <h1 id="gameTitle" class="text-4xl md:text-5xl font-bold mb-4"></h1>
+                <h2 id="statusText" class="text-2xl md:text-3xl mb-6 h-10">Player X's Turn</h2>
+                <div class="game-grid mx-auto">
+                    <div class="cell" data-cell-index="0"></div>
+                    <div class="cell" data-cell-index="1"></div>
+                    <div class="cell" data-cell-index="2"></div>
+                    <div class="cell" data-cell-index="3"></div>
+                    <div class="cell" data-cell-index="4"></div>
+                    <div class="cell" data-cell-index="5"></div>
+                    <div class="cell" data-cell-index="6"></div>
+                    <div class="cell" data-cell-index="7"></div>
+                    <div class="cell" data-cell-index="8"></div>
+                </div>
+                <button id="resetGameBtn" class="btn-primary mt-8">Reset Game</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Victory Popup -->
+    <div id="victoryPopup" class="popup-overlay">
+        <div class="popup-content">
+            <h2 id="popupMessage"></h2>
+            <div class="popup-buttons">
+                <button id="playAgainButton">Play Again</button>
+                <button id="backToMenuButton">Back to Menu</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- DOM Elements ---
+            const screens = {
+                home: document.getElementById('homeScreen'),
+                difficulty: document.getElementById('difficultyScreen'),
+                game: document.getElementById('gameScreen'),
+            };
+            const mainTitle = document.getElementById('mainTitle');
+            const gameTitle = document.getElementById('gameTitle');
+            const playComputerBtn = document.getElementById('playComputerBtn');
+            const play2PBtn = document.getElementById('play2PBtn');
+            const backToHomeBtn = document.getElementById('backToHomeBtn');
+            const difficultyButtons = document.querySelectorAll('#difficultyScreen button[data-difficulty]');
+            const statusText = document.getElementById('statusText');
+            const cells = document.querySelectorAll('.cell');
+            const resetGameBtn = document.getElementById('resetGameBtn');
+            const victoryPopup = document.getElementById('victoryPopup');
+            const popupMessage = document.getElementById('popupMessage');
+            const playAgainButton = document.getElementById('playAgainButton');
+            const backToMenuButton = document.getElementById('backToMenuButton');
+
+            // --- Game State ---
+            let gameState = ["", "", "", "", "", "", "", "", ""];
+            let currentPlayer = "X";
+            let gameActive = true;
+            let gameMode = null; // '2P', 'easy', 'medium', 'hard'
+            const humanPlayer = "X";
+            const aiPlayer = "O";
+
+            const winConditions = [
+                [0, 1, 2], [3, 4, 5], [6, 7, 8], // Rows
+                [0, 3, 6], [1, 4, 7], [2, 5, 8], // Columns
+                [0, 4, 8], [2, 4, 6]             // Diagonals
+            ];
+
+            // --- UI Functions ---
+            const animateTitle = (element) => {
+                const titleText = "TIC TAC TOE";
+                element.innerHTML = '';
+                titleText.split('').forEach((char, index) => {
+                    const span = document.createElement('span');
+                    span.textContent = char;
+                    span.className = 'title-char';
+                    if (index % 2 === 0) {
+                        span.style.color = '#3f3b35'; // neutral-dark
+                    } else {
+                        span.style.color = '#fff8f3'; // neutral-light
+                        span.style.textShadow = '0 0 5px #3f3b35';
+                    }
+                    element.appendChild(span);
+                });
+            };
+
+            const showScreen = (screenId) => {
+                Object.values(screens).forEach(screen => screen.classList.add('hidden'));
+                screens[screenId].classList.remove('hidden');
+            };
+
+            const showVictoryPopup = (message) => {
+                popupMessage.textContent = message;
+                victoryPopup.classList.add('visible');
+            };
+
+            const hideVictoryPopup = () => {
+                victoryPopup.classList.remove('visible');
+            };
+
+            // --- Game Logic ---
+            const startGame = (mode) => {
+                gameMode = mode;
+                gameActive = true;
+                currentPlayer = "X";
+                gameState = ["", "", "", "", "", "", "", "", ""];
+                statusText.textContent = `Player X's Turn`;
+                cells.forEach(cell => {
+                    cell.classList.remove('x', 'o');
+                });
+                showScreen('game');
+            };
+
+            const handleCellClick = (e) => {
+                const clickedCell = e.target;
+                const clickedCellIndex = parseInt(clickedCell.getAttribute('data-cell-index'));
+
+                if (gameState[clickedCellIndex] !== "" || !gameActive) {
+                    return;
+                }
+
+                makeMove(clickedCellIndex, currentPlayer);
+
+                if (gameActive) {
+                    switchPlayer();
+                    if (gameMode !== '2P' && currentPlayer === aiPlayer && gameActive) {
+                        statusText.textContent = `Computer is thinking...`;
+                        setTimeout(aiMove, 700);
+                    }
+                }
+            };
+
+            const makeMove = (index, player) => {
+                gameState[index] = player;
+                cells[index].classList.add(player.toLowerCase());
+                checkResult();
+            };
+
+            const switchPlayer = () => {
+                currentPlayer = currentPlayer === "X" ? "O" : "X";
+                statusText.textContent = `Player ${currentPlayer}'s Turn`;
+            };
+
+            const checkResult = () => {
+                let roundWon = false;
+                for (let i = 0; i < winConditions.length; i++) {
+                    const winCondition = winConditions[i];
+                    let a = gameState[winCondition[0]];
+                    let b = gameState[winCondition[1]];
+                    let c = gameState[winCondition[2]];
+                    if (a === '' || b === '' || c === '') {
+                        continue;
+                    }
+                    if (a === b && b === c) {
+                        roundWon = true;
+                        break;
+                    }
+                }
+
+                if (roundWon) {
+                    statusText.textContent = `Player ${currentPlayer} Wins!`;
+                    gameActive = false;
+                    setTimeout(() => showVictoryPopup(`Player ${currentPlayer} Wins!`), 500);
+                    return;
+                }
+
+                let roundDraw = !gameState.includes("");
+                if (roundDraw) {
+                    statusText.textContent = `It's a Draw!`;
+                    gameActive = false;
+                    setTimeout(() => showVictoryPopup("It's a Draw!"), 500);
+                    return;
+                }
+            };
+
+            const resetGameInCurrentMode = () => {
+                startGame(gameMode);
+            };
+
+            // --- AI Logic ---
+            const aiMove = () => {
+                if (!gameActive) return;
+                let move;
+                switch (gameMode) {
+                    case 'easy':
+                        move = getEasyMove();
+                        break;
+                    case 'medium':
+                        move = getMediumMove();
+                        break;
+                    case 'hard':
+                        move = getHardMove();
+                        break;
+                }
+                makeMove(move, aiPlayer);
+                if (gameActive) {
+                    switchPlayer();
+                }
+            };
+
+            const getEmptyCells = (board = gameState) => {
+                return board.map((cell, index) => cell === "" ? index : null).filter(val => val !== null);
+            };
+
+            const getEasyMove = () => {
+                const emptyCells = getEmptyCells();
+                return emptyCells[Math.floor(Math.random() * emptyCells.length)];
+            };
+
+            const checkWinPossibility = (board, player) => {
+                for (const condition of winConditions) {
+                    const [a, b, c] = condition;
+                    if (board[a] === player && board[b] === player && board[c] === "") return c;
+                    if (board[a] === player && board[c] === player && board[b] === "") return b;
+                    if (board[b] === player && board[c] === player && board[a] === "") return a;
+                }
+                return -1;
+            };
+
+            const getMediumMove = () => {
+                // 1. Check if AI can win
+                let winningMove = checkWinPossibility(gameState, aiPlayer);
+                if (winningMove !== -1) return winningMove;
+
+                // 2. Check if human can win and block
+                let blockingMove = checkWinPossibility(gameState, humanPlayer);
+                if (blockingMove !== -1) return blockingMove;
+
+                // 3. Make a random move
+                return getEasyMove();
+            };
+
+            const getHardMove = () => {
+                return minimax(gameState, aiPlayer).index;
+            };
+
+            const minimax = (newBoard, player) => {
+                const emptyCells = getEmptyCells(newBoard);
+
+                if (checkWinner(newBoard, humanPlayer)) {
+                    return { score: -10 };
+                } else if (checkWinner(newBoard, aiPlayer)) {
+                    return { score: 10 };
+                } else if (emptyCells.length === 0) {
+                    return { score: 0 };
+                }
+
+                let moves = [];
+                for (let i = 0; i < emptyCells.length; i++) {
+                    let move = {};
+                    move.index = emptyCells[i];
+                    newBoard[emptyCells[i]] = player;
+
+                    if (player === aiPlayer) {
+                        let result = minimax(newBoard, humanPlayer);
+                        move.score = result.score;
+                    } else {
+                        let result = minimax(newBoard, aiPlayer);
+                        move.score = result.score;
+                    }
+
+                    newBoard[emptyCells[i]] = "";
+                    moves.push(move);
+                }
+
+                let bestMove;
+                if (player === aiPlayer) {
+                    let bestScore = -10000;
+                    for (let i = 0; i < moves.length; i++) {
+                        if (moves[i].score > bestScore) {
+                            bestScore = moves[i].score;
+                            bestMove = i;
+                        }
+                    }
+                } else {
+                    let bestScore = 10000;
+                    for (let i = 0; i < moves.length; i++) {
+                        if (moves[i].score < bestScore) {
+                            bestScore = moves[i].score;
+                            bestMove = i;
+                        }
+                    }
+                }
+                return moves[bestMove];
+            };
+
+            const checkWinner = (board, player) => {
+                for (const condition of winConditions) {
+                    if (condition.every(index => board[index] === player)) {
+                        return true;
+                    }
+                }
+                return false;
+            };
+
+            // --- Event Listeners ---
+            playComputerBtn.addEventListener('click', () => showScreen('difficulty'));
+            play2PBtn.addEventListener('click', () => startGame('2P'));
+            backToHomeBtn.addEventListener('click', () => showScreen('home'));
+            
+            difficultyButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const difficulty = button.getAttribute('data-difficulty');
+                    startGame(difficulty);
+                });
+            });
+
+            cells.forEach(cell => cell.addEventListener('click', handleCellClick));
+            resetGameBtn.addEventListener('click', resetGameInCurrentMode);
+
+            playAgainButton.addEventListener('click', () => {
+                hideVictoryPopup();
+                resetGameInCurrentMode();
+            });
+
+            backToMenuButton.addEventListener('click', () => {
+                hideVictoryPopup();
+                showScreen('home');
+            });
+
+            // --- Initial Setup ---
+            animateTitle(mainTitle);
+            animateTitle(gameTitle);
+        });
+    </script>
+</body>
+</html>
